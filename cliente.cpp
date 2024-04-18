@@ -71,6 +71,28 @@ public:
 
             buffer[bytesRecibidos] = '\0';
             std::cout << "Mensaje del servidor: " << buffer << std::endl;
+
+            // Buscar la subcadena "Es tu turno" en el mensaje recibido
+            if (strstr(buffer, "Es tu turno") != nullptr)
+            {
+                std::string input;
+                std::cout << "Ingrese el número de columna (1-7): ";
+                std::getline(std::cin, input); // Leer toda la línea
+                int columna = std::stoi(input);
+                if (columna < 1 || columna > 7)
+                {
+                    std::cout << "Columna inválida. Inténtelo de nuevo." << std::endl;
+                    continue;
+                }
+                send(clienteSocket, input.c_str(), input.size(), 0);
+
+               
+            }
+            // Si el servidor envía un mensaje con el movimiento de la máquina
+            else if (strstr(buffer, "servidor juega") != nullptr)
+            {
+                std::cout << buffer << std::endl;
+            }
         }
 
         cerrarConexion();
