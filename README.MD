@@ -1,8 +1,8 @@
 # Tarea 1 Comunicacion de datos y redes
 
 ## Integrantes
-- **Edison Muñoz**
-- **Domingo Vega**
+- **Edison Muñoz [@Eddikhie](https://github.com/Xonazo)**
+- **Domingo Vega [@DJVegaG](https://github.com/DJVegaG)**
 - **Ingenieria Civil Informatica** - **Universidad del Bio-Bio**
 
 ## Descripción
