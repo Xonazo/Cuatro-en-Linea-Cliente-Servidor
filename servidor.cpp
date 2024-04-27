@@ -5,24 +5,24 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <cstdlib>
-#include <cstring> // Para la función memset
-#include <thread>  // Para manejar múltiples conexiones con hilos
-#include <mutex>   // Para la sincronización de datos compartidos
+#include <cstring>
+#include <thread>
+#include <mutex>
 #include <algorithm>
-#include <random> // Para generar números aleatorios
+#include <random>
 
 class Juego
 {
 private:
     int clienteSocket;
-    std::string identificador; // Identificador único para el cliente
+    std::string identificador; // identificador para el cliente
 
-    std::vector<std::vector<char>> tablero; // Tablero del juego
+    std::vector<std::vector<char>> tablero;
 
 public:
     Juego(int socket, std::string id) : clienteSocket(socket), identificador(id)
     {
-        tablero.resize(6, std::vector<char>(7, ' ')); // Inicializar el tablero con espacios en blanco
+        tablero.resize(6, std::vector<char>(7, ' '));
     }
 
     int getClienteSocket() const { return clienteSocket; }
@@ -35,10 +35,10 @@ class Servidor
 private:
     int puerto;
     std::vector<Juego> juegos;
-    std::mutex mutexJuegos;   // Para sincronizar el acceso a la lista de juegos
-    const char jugador = 'C'; // Ficha del jugador
-    const char maquina = 'S'; // Ficha de la máquina
-    int contadorClientes = 0; // Contador de clientes
+    std::mutex mutexJuegos;
+    const char jugador = 'C'; // letra del jugador
+    const char maquina = 'S'; // letra de la máquina
+    int contadorClientes = 0; // contador de clientes
 
 public:
     Servidor(int puerto) : puerto(puerto) {}
@@ -50,12 +50,17 @@ public:
 
     void enviarMensajeBienvenida(int socket)
     {
-        enviarMensaje(socket, "¡Bienvenido al servidor de juegos!\n");
+        enviarMensaje(socket, "¡Bienvenido a cuatro linea!\n");
     }
 
+    /*Verificacion de limites*/
     bool verificarJugada(const std::vector<std::vector<char>> &tablero, int columna)
     {
-        return tablero[0][columna] == ' '; // Verificar si la casilla está vacía
+        if (columna < 0 || columna >= 7)
+        {
+            return false;
+        }
+        return tablero[0][columna] == ' ';
     }
 
     void realizarJugada(std::vector<std::vector<char>> &tablero, int columna, char ficha)
@@ -70,9 +75,25 @@ public:
         }
     }
 
+    /* Verificacion Empate*/
+    bool verificarEmpate(const std::vector<std::vector<char>> &tablero)
+    {
+
+        for (int j = 0; j < 7; ++j)
+        {
+            if (tablero[0][j] == ' ')
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /*Verificaciones de juego*/
     bool verificarGanador(const std::vector<std::vector<char>> &tablero, char ficha)
     {
-        // Verificar horizontalmente
+        /*verificar horizontalmente*/
         for (int i = 0; i < 6; ++i)
         {
             for (int j = 0; j < 4; ++j)
@@ -83,7 +104,7 @@ public:
                 }
             }
         }
-        // Verificar verticalmente
+        /* verificar verticalmente*/
         for (int i = 0; i < 3; ++i)
         {
             for (int j = 0; j < 7; ++j)
@@ -94,7 +115,7 @@ public:
                 }
             }
         }
-        // Verificar en diagonal (de izquierda a derecha)
+        /* verificar en diagonal*/
         for (int i = 0; i < 3; ++i)
         {
             for (int j = 0; j < 4; ++j)
@@ -105,7 +126,7 @@ public:
                 }
             }
         }
-        // Verificar en diagonal (de derecha a izquierda)
+        /*Verificar en diagonal (derecha-izquierda)*/
         for (int i = 0; i < 3; ++i)
         {
             for (int j = 3; j < 7; ++j)
@@ -134,7 +155,7 @@ public:
 
     void manejarCliente(int clienteSocket, const sockaddr_in &clienteDireccion)
     {
-        std::string identificador = "cliente" + std::to_string(++contadorClientes); // Incrementar el contador de clientes
+        std::string identificador = "cliente" + std::to_string(++contadorClientes); // incrementar el contador de clientes
         Juego nuevoJuego(clienteSocket, identificador);
 
         {
@@ -142,43 +163,75 @@ public:
             juegos.push_back(nuevoJuego);
         }
 
-        std::cout << "Nuevo cliente conectado [" << inet_ntoa(clienteDireccion.sin_addr) << ":" << ntohs(clienteDireccion.sin_port) << "] - Identificador: " << identificador << std::endl;
+        std::cout << "Cliente conectado [" << inet_ntoa(clienteDireccion.sin_addr) << ":" << ntohs(clienteDireccion.sin_port) << "] - Identificador: " << identificador << std::endl;
 
         enviarMensajeBienvenida(clienteSocket);
 
-        std::vector<std::vector<char>> &tablero = nuevoJuego.getTablero(); // Obtener el tablero específico para este juego
+        std::vector<std::vector<char>> &tablero = nuevoJuego.getTablero(); // tablero especifico de juego
+
+        /*Ver si comienza el cliente o el servidor*/
+        bool clienteComienza = std::rand() % 2 == 0;
+
+        /*mensaje de quien comienza*/
+        if (clienteComienza)
+        {
+            enviarMensaje(clienteSocket, "Empiezas el cliente (Tú)\n");
+        }
+        else
+        {
+            enviarMensaje(clienteSocket, "Empieza el Servidor\n");
+
+            int columnaInicial = obtenerColumnaMaquina(tablero);
+            realizarJugada(tablero, columnaInicial, maquina);
+            std::cout << "Servidor jugando con  " << identificador << " juega columna " << columnaInicial + 1 << std::endl;
+            enviarMensaje(clienteSocket, "Servidor juega columna " + std::to_string(columnaInicial + 1) + "\n");
+        }
 
         bool finJuego = false;
         while (!finJuego)
         {
-            // Turno del jugador
+            /*Turno del jugador*/
             mostrarTablero(clienteSocket, tablero);
-            enviarMensaje(clienteSocket, "Es tu turno. Ingrese el número de columna (1-7): ");
+            enviarMensaje(clienteSocket, "Es tu turno.");
             char columna_buffer[1024];
             int bytesRecibidos = recv(clienteSocket, columna_buffer, sizeof(columna_buffer), 0);
             if (bytesRecibidos <= 0)
             {
-                std::cerr << "El cliente " << identificador << " se desconectó o ocurrió un error durante la recepción de datos." << std::endl;
-                break; // Salir del bucle si la conexión se ha cerrado o ha ocurrido un error
+                std::cerr << "El cliente " << identificador << " se desconecto o ocurrio un error." << std::endl;
+                break;
             }
             columna_buffer[bytesRecibidos] = '\0';
             int columna = std::stoi(columna_buffer);
-            columna--; // Ajustar columna a índice base 0
+            columna--;
             if (columna < 0 || columna >= 7 || !verificarJugada(tablero, columna))
             {
-                enviarMensaje(clienteSocket, "Columna inválida. Inténtelo de nuevo.\n");
+                enviarMensaje(clienteSocket, "Columna invalida. Intentelo de nuevo.\n");
                 continue;
             }
             realizarJugada(tablero, columna, jugador);
 
             std::cout << identificador << ": Cliente juega columna " << columna + 1 << std::endl;
-            // Enviar el mensaje al cliente indicando el movimiento de la máquina
-            enviarMensaje(clienteSocket, "servidor juega columna " + std::to_string(columna + 1) + "\n");
 
+            /*verificar si gano el jugador*/
             if (verificarGanador(tablero, jugador))
             {
                 mostrarTablero(clienteSocket, tablero);
                 enviarMensaje(clienteSocket, "\n¡Felicidades! ¡Has ganado!\nFin del juego.\n");
+
+                std::cout << "El cliente " << identificador << " ha ganado la partida y se desconectó." << std::endl;
+
+                finJuego = true;
+                break;
+            }
+
+            /* verificar empate */
+            if (verificarEmpate(tablero))
+            {
+                mostrarTablero(clienteSocket, tablero);
+                enviarMensaje(clienteSocket, "\n¡El juego ha terminado en empate!\nFin del juego.\n");
+
+                std::cout << "El cliente " << identificador << " ha empatado con el servidor y se desconectó." << std::endl;
+
                 finJuego = true;
                 break;
             }
@@ -186,12 +239,18 @@ public:
             // Turno de la máquina
             int columnaMaquina = obtenerColumnaMaquina(tablero);
             realizarJugada(tablero, columnaMaquina, maquina);
-            std::cout << "Servidor juega columna " << columnaMaquina + 1 << std::endl;
+            std::cout << "Servidor jugando con " << identificador << " juega columna " << columnaMaquina + 1 << std::endl;
 
+            enviarMensaje(clienteSocket, "\nServidor juega columna: " + std::to_string(columnaMaquina + 1) + "\n");
+
+            /*verificar si gano el servidor*/
             if (verificarGanador(tablero, maquina))
             {
                 mostrarTablero(clienteSocket, tablero);
                 enviarMensaje(clienteSocket, "\n¡La máquina ha ganado!\nFin del juego.\n");
+
+                std::cout << "El cliente " << identificador << " ha perdido la partida y se desconecto." << std::endl;
+
                 finJuego = true;
                 break;
             }
@@ -224,28 +283,31 @@ public:
         }
     }
 
+    /*funcion encargada de mostrar el tablero*/
     void mostrarTablero(int clienteSocket, const std::vector<std::vector<char>> &tablero)
     {
         std::string mensaje;
 
-        mensaje += "---------------\n";
+        mensaje += "-----------------\n";
         for (size_t i = 0; i < tablero.size(); ++i)
         {
-            mensaje += '|'; // Delimitador de fila
+            mensaje += std::to_string(i + 1);
+            mensaje += '|';
             for (size_t j = 0; j < tablero[i].size(); ++j)
             {
                 mensaje += tablero[i][j];
-                mensaje += '|'; // Delimitador de columna
+                mensaje += '|';
             }
             mensaje += '\n';
-            mensaje += "---------------\n"; // Línea de delimitación
+            mensaje += "----------------\n";
         }
-        mensaje += " 1 2 3 4 5 6 7\n";
+        mensaje += "  1 2 3 4 5 6 7\n";
         enviarMensaje(clienteSocket, mensaje);
     }
 
     void iniciar()
     {
+        /*crear socket*/
         int servidorSocket = socket(AF_INET, SOCK_STREAM, 0);
         if (servidorSocket == -1)
         {
@@ -253,6 +315,7 @@ public:
             return;
         }
 
+        /*configuracion direccion*/
         struct sockaddr_in direccion;
         direccion.sin_family = AF_INET;
         direccion.sin_addr.s_addr = INADDR_ANY;
@@ -260,7 +323,7 @@ public:
 
         if (bind(servidorSocket, (struct sockaddr *)&direccion, sizeof(direccion)) == -1)
         {
-            std::cerr << "Error al vincular el socket a la dirección y puerto" << std::endl;
+            std::cerr << "Error al vincular el socket a la direccion y puerto" << std::endl;
             close(servidorSocket);
             return;
         }
@@ -272,27 +335,24 @@ public:
             return;
         }
 
-        std::cout << "Esperando conexiones ..." << std::endl;
+        std::cout << "Esperando conexiones ... \n"
+                  << std::endl;
 
+        /*Bucle para aceptar conexiones y mantenerlas*/
         while (true)
         {
-            std::cout << "Esperando para aceptar una nueva conexión..." << std::endl;
             struct sockaddr_in clienteDireccion;
             socklen_t clienteTamano = sizeof(clienteDireccion);
             int clienteSocket = accept(servidorSocket, (struct sockaddr *)&clienteDireccion, &clienteTamano);
             if (clienteSocket == -1)
             {
-                std::cerr << "Error al aceptar la conexión entrante" << std::endl;
+                std::cerr << "Error al aceptar la conexion " << std::endl;
                 continue;
             }
-
-            std::cout << "Nueva conexión aceptada. Creando hilo para manejar al cliente..." << std::endl;
-
+            // creacion de hilo para manejar los clientes
             std::thread clienteThread(&Servidor::manejarCliente, this, clienteSocket, clienteDireccion);
-            clienteThread.detach(); // Desconectamos el hilo del hilo principal
+            clienteThread.detach();
         }
-
-        // No es necesario cerrar el servidorSocket aquí, ya que este bucle es infinito
     }
 };
 
