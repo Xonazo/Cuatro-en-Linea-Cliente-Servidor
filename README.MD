@@ -36,3 +36,77 @@ $ ./cliente 192.168.1.100 7777
 ```
 Donde: 192.168.1.100 es la direccion IP del servidor y 7777 es el puerto al cual conectar en el servidor.
 * La manera en que el cliente indique la columna queda a criterio del programador.
+
+***
+
+# Pasos Previos
+* Tener instalado el compilador de C++
+
+* Tener instalado Make
+
+## Instalacion de compilador de C++
+* Para instalar el compilador de C++, se debe escribir y ejecutar el siguiente comando en la terminal:
+``` 
+sudo apt-get install g++
+```
+
+## Instalacion de Make
+* Para instalar el programa make, se debe escribir y ejecutar el siguiente comando en la terminal:
+``` 
+sudo apt-get install Make
+```
+***
+
+# Instrucciones de uso
+
+ **1. Clonar el repositorio**
+
+ Para clonar el repositorio ingrese el siguiente comando en su terminal:
+
+```
+git clone https://github.com/Xonazo/Cuatro-en-Linea-Cliente-Servidor.git
+```
+**2. Comando make**
+
+Para compilar los programas ubiquese en la carpeta donde esta el servidor y cliente, y escriba el siguiente comando en la terminal:
+
+```
+make
+```
+
+**3. Servidor**
+Para ejecutar el Servidor en su terminal escriba el siguiente comando:
+
+```
+./Servidor <Puerto>
+```
+En puerto se selecciona el puerto que el usuario desee, por ejemplo podria ser el 7777.
+
+```
+./Servidor 7777
+```
+
+**4. Cliente**
+
+Para ejecutar el cliente en su terminal escriba el siguiente comando:
+
+```
+./Cliente <ip> <Puerto>
+```
+
+En donde ip es la direccion ip del servidor, y puerto es el puerto al cual conectar en el servidor. Por ejemplo:
+
+```
+./Cliente 192.168.1.100 7777
+```
+**5. Juego**
+
+Una vez aqui ya comienza el juego, en donde por lado del cliente debe ingresar las columnas para jugar y en el servidor puede observar los diversos juegos.
+
+#### Imagen ejemplo de servidor:
+![Servidor ejemplo](https://i.imgur.com/MFeNafg.png)
+
+#### Imagen de ejemplo de Cliente:
+![Texto alternativo](https://i.imgur.com/zkGR1o6.png)
+
+***
